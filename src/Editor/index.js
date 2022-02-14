@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { EditorState, convertFromRaw, convertToRaw } from "draft-js";
+import { EditorState, convertFromRaw, convertToRaw, conver } from "draft-js";
+//import draftToHtml from 'draftjs-to-html';
+import { stateToHTML } from "draft-js-export-html";
 import {
   initiateSocket,
   disconnectSocket,
@@ -14,16 +16,22 @@ export default function MyEditor() {
   const [editorState, setEditorState] = React.useState(() =>
     EditorState.createEmpty()
   );
+
   const [room] = useState("Test");
 
   useEffect(() => {
+    EditorState.moveSelectionToEnd(editorState);
+  }, [editorState]);
+
+  useEffect(() => {
     if (room) initiateSocket(room);
+
     subscribeToChat((err, data) => {
+      console.log("=====>", data);
       if (err) return;
       if (data) {
-        console.log("=====");
-        console.log(data);
         const item = convertFromRaw(JSON.parse(data));
+        console.log(item);
         const getState = EditorState.createWithContent(item);
         setEditorState(getState); /*, ...oldChats*/
       }
@@ -34,6 +42,7 @@ export default function MyEditor() {
   }, [room]);
 
   const changeState = (d) => {
+    console.log(convertToRaw(d.getCurrentContent()));
     sendMessage(room, JSON.stringify(convertToRaw(d.getCurrentContent())));
     setEditorState(d);
   };
@@ -51,6 +60,14 @@ export default function MyEditor() {
     }
   }
 
+  let htmlOptions = {
+    blockRenderers: {
+      "header-one": (block) => {
+        return <Typography variant="h1">escape(block.getText()</Typography>;
+      }
+    }
+  };
+
   return (
     <>
       <div>
@@ -60,6 +77,7 @@ export default function MyEditor() {
           onEditorStateChange={(state) => changeState(state)}
           wrapperClassName="demo-wrapper"
           editorClassName="demo-editor"
+          // toolbar={toolbarOptions}
           customBlockRenderFunc={myBlockRenderer}
         />
       </div>
